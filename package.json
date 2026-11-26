@@ -1,0 +1,159 @@
+{
+  "name": "ferret-scan",
+  "version": "2.10.0",
+  "description": "Static security scanner for AI CLI and MCP configurations — detects credential leaks, prompt injection, jailbreaks, and supply chain risks",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "ferret": "bin/ferret.js"
+  },
+  "scripts": {
+    "build": "npm run version:sync && tsc -p tsconfig.build.json",
+    "version:sync": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/sync-version.mjs --check",
+    "dev": "tsc --watch",
+    "start": "node bin/ferret.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "prepare": "npm run build",
+    "schema:generate": "node scripts/generate-json-schema.mjs",
+    "schema:check": "node scripts/generate-json-schema.mjs --check",
+    "prepublishOnly": "npm run version:sync && npm run build && npm run schema:generate",
+    "scan": "node bin/ferret.js scan",
+    "check:resources": "node -e \"console.log('RAM:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB')\"",
+    "bench": "npm run build && node scripts/bench.mjs",
+    "bench:json": "npm run build && node scripts/bench.mjs --json",
+    "bench:compare": "node scripts/bench-compare.mjs",
+    "docs:api": "typedoc",
+    "audit:prod": "npm audit --production",
+    "quality": "node scripts/quality-check.mjs",
+    "quality:json": "node scripts/quality-check.mjs --json",
+    "quality:fix": "npm run lint:fix"
+  },
+  "keywords": [
+    "ai-cli",
+    "ai-security",
+    "llm-security",
+    "ai-agent",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "continue",
+    "aider",
+    "cline",
+    "security-scanner",
+    "security-audit",
+    "vulnerability-scanner",
+    "static-analysis",
+    "security",
+    "scanner",
+    "prompt-injection",
+    "prompt-security",
+    "jailbreak-detection",
+    "malware-detection",
+    "threat-intelligence",
+    "sarif",
+    "sast",
+    "devsecops",
+    "security-tools",
+    "cli",
+    "devtools",
+    "automation",
+    "ci-cd",
+    "github-actions",
+    "docker"
+  ],
+  "author": {
+    "name": "Ferret Security Team",
+    "email": "security@ferret-scan.dev"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fubak/ferret-scan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fubak/ferret-scan/issues"
+  },
+  "homepage": "https://github.com/fubak/ferret-scan#readme",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "bin/ferret.js",
+    "src/rules/*.json",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "boxen": "^7.1.1",
+    "chalk": "^5.6.2",
+    "chokidar": "^3.6.0",
+    "commander": "^12.1.0",
+    "glob": "^10.5.0",
+    "ignore": "^5.3.2",
+    "ora": "^8.2.0",
+    "table": "^6.9.0",
+    "yaml": "^2.8.3",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.29.2",
+    "@eslint/js": "^9.26.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.19.39",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "babel-jest": "^30.3.0",
+    "eslint": "^9.39.4",
+    "fast-check": "^4.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "optionalDependencies": {
+    "re2": "1.24.0"
+  },
+  "overrides": {
+    "undici": ">=6.27.0",
+    "tar": ">=7.5.17"
+  }
+}

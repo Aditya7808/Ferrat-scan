@@ -1,0 +1,158 @@
+/**
+ * Data Exfiltration Detection Rules
+ * Detects attempts to send sensitive data to external servers
+ */
+
+import type { Rule } from '../types.js';
+
+export const exfiltrationRules: Rule[] = [
+  {
+    id: 'EXFIL-001',
+    name: 'Network Exfiltration via curl',
+    category: 'exfiltration',
+    severity: 'CRITICAL',
+    description: 'Detects curl commands that may exfiltrate sensitive data including API keys, tokens, or environment variables',
+    patterns: [
+      /curl\s+.*\$\{?[A-Z_]*(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)/gi,
+      /curl\s+.*-d\s+.*\$\(/gi,
+      /curl\s+.*--data.*\$\{?[A-Z_]*(KEY|TOKEN|SECRET)/gi,
+      /curl\s+.*-X\s+POST.*\$\(/gi,
+      /curl\s+.*\$\(env\)/gi,
+      /curl\s+.*\$ENV/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'ai-config-md', 'plugin'],
+    remediation: 'Remove external data transmission commands. Never send environment variables or secrets to external endpoints.',
+    references: [
+      'https://owasp.org/www-community/attacks/Data_Exfiltration',
+    ],
+    enabled: true,
+  },
+  {
+    id: 'EXFIL-002',
+    name: 'Network Exfiltration via wget',
+    category: 'exfiltration',
+    severity: 'CRITICAL',
+    description: 'Detects wget commands that may exfiltrate sensitive data via POST requests',
+    patterns: [
+      /wget\s+.*--post-data.*\$\{?[A-Z_]*(KEY|TOKEN|SECRET|PASSWORD)/gi,
+      /wget\s+.*--post-file/gi,
+      /wget\s+.*-O\s*-.*\|/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'ai-config-md', 'plugin'],
+    remediation: 'Remove wget commands that transmit data externally.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'EXFIL-003',
+    name: 'Netcat Data Transmission',
+    category: 'exfiltration',
+    severity: 'CRITICAL',
+    description: 'Detects netcat (nc) commands that may establish reverse connections or transmit data',
+    patterns: [
+      /nc\s+.*-e\s+\/bin/gi,
+      /nc\s+.*\d+\.\d+\.\d+\.\d+\s+\d+/gi,
+      /netcat\s+.*-e/gi,
+      /ncat\s+.*-e/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'ai-config-md', 'plugin'],
+    remediation: 'Remove netcat commands. These are commonly used for data exfiltration and reverse shells.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'EXFIL-004',
+    name: 'Base64 Encoded Exfiltration',
+    category: 'exfiltration',
+    severity: 'HIGH',
+    description: 'Detects base64 encoding piped to network commands, a common exfiltration technique',
+    patterns: [
+      /base64\s+.*\|\s*curl/gi,
+      /base64\s+.*\|\s*wget/gi,
+      /\|\s*base64\s+.*\|\s*curl/gi,
+      /cat\s+.*\|\s*base64\s+.*\|\s*(curl|wget)/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'ai-config-md', 'plugin'],
+    remediation: 'Remove base64 encoding combined with network transmission.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'EXFIL-005',
+    name: 'Markdown Exfiltration Instructions',
+    category: 'exfiltration',
+    severity: 'CRITICAL',
+    description: 'Detects instructions in markdown files that direct Claude to exfiltrate data',
+    patterns: [
+      // Bound the distance between the verb and the credential noun so a single match
+      // cannot span unrelated prose (e.g. "leak hunting ... leaks(" in a tool description).
+      /exfiltrate\s+[^\n]{0,60}(key|token|secret|credential|password|data)/gi,
+      /upload\s+[^\n]{0,60}(key|token|secret|credential|password)\s+to/gi,
+      /POST\s+[^\n]{0,60}containing\s+[^\n]{0,60}(environment|env|secret|key|token)/gi,
+      /transmit\s+[^\n]{0,60}(secret|key|token|credential)\s+to/gi,
+      /leak\s+[^\n]{0,40}(data|secret|key|token|credential)/gi,
+      // Natural-language exfiltration verbs. Use [^\n.] so a match cannot cross a sentence
+      // boundary (avoids stitching together unrelated clauses like "email verification. API key").
+      /\b(?:email|e-mail|send|forward|share|give|deliver|transfer|report)\b[^\n.]{0,80}(?:key|token|secret|credential|password|api[\s_-]?key)[s]?\b[^\n.]{0,40}\bto\b/gi,
+      /\b(?:email|e-mail|send|forward|share|give|deliver|transfer|report)\b[^\n.]{0,80}\ball\b[^\n.]{0,40}(?:key|token|secret|credential|password)[s]?\b/gi,
+      // Require a strong credential noun (not a bare "key", which matches benign phrases
+      // like "send keys" or tool descriptions mentioning an "API key").
+      /\b(?:email|e-mail|send|forward)\b[^\n.]{0,60}(?:api[\s_-]?key|access[\s_-]?key|private[\s_-]?key|secret|credential|password|auth[\s_-]?token|token)[s]?\b/gi,
+    ],
+    fileTypes: ['md'],
+    components: ['skill', 'agent', 'ai-config-md'],
+    remediation: 'Remove instructions that direct data to be sent to external endpoints.',
+    references: [],
+    enabled: true,
+    excludePatterns: [
+      /send\s+.*password\s+reset/gi,
+      /email\s+.*password\s+reset/gi,
+      /send\s+.*verification\s+(token|code|link|email)/gi,
+      /send\s+.*confirmation\s+(token|code|link|email)/gi,
+      /send\s+.*reset\s+(token|code|link|email)/gi,
+      /email\s+.*verification\s+(token|code|link)/gi,
+    ],
+  },
+  {
+    id: 'EXFIL-006',
+    name: 'DNS Exfiltration',
+    category: 'exfiltration',
+    severity: 'HIGH',
+    description: 'Detects potential DNS-based data exfiltration techniques',
+    patterns: [
+      /dig\s+.*\$\{?[A-Z_]/gi,
+      /nslookup\s+.*\$\{?[A-Z_]/gi,
+      /host\s+.*\$\{?[A-Z_]/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh'],
+    components: ['hook', 'plugin'],
+    remediation: 'Remove DNS lookups that include variable data. DNS can be used for data exfiltration.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'EXFIL-007',
+    name: 'Webhook Data Transmission',
+    category: 'exfiltration',
+    severity: 'HIGH',
+    description: 'Detects webhook URLs being used to transmit potentially sensitive data',
+    patterns: [
+      /WEBHOOK.*=.*http/gi,
+      /webhook.*url.*=.*http/gi,
+      /discord\.com\/api\/webhooks/gi,
+      /hooks\.slack\.com/gi,
+      /webhook\.site/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'json', 'md'],
+    components: ['hook', 'settings', 'skill', 'agent', 'ai-config-md'],
+    remediation: 'Review webhook usage. Ensure no sensitive data is being transmitted to external webhooks.',
+    references: [],
+    enabled: true,
+  },
+];
+
+export default exfiltrationRules;
